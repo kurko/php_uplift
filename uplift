@@ -1,0 +1,29 @@
+#!/usr/bin/php
+<?php
+define('UPLIFT_CORE_DIR', 'upliftcore/');
+    define('COMMANDS_DIR', UPLIFT_CORE_DIR.'commands/');
+    define('LIB_DIR', UPLIFT_CORE_DIR.'lib/');
+    define('CLASS_DIR', LIB_DIR.'class/');
+    define('FUNCTIONS_DIR', LIB_DIR.'functions/');
+
+require_once(FUNCTIONS_DIR.'output.php');
+require_once(CLASS_DIR.'Shell.php');
+require_once(CLASS_DIR.'Uplift.php');
+
+$command = strtolower($argv['1']);
+
+if( is_file(COMMANDS_DIR.$command.'.php') )
+{
+    include(COMMANDS_DIR.$command.'.php');
+    
+    if( !class_exists($command) )
+        exitOnUknownCommand($command);
+
+    $uplift = new $command();
+    
+} else {
+    exitOnUknownCommand($command);
+}
+
+echo "\n";
+?>
