@@ -6,11 +6,18 @@ define('UPLIFT_CORE_DIR', 'upliftcore/');
     define('CLASS_DIR', LIB_DIR.'class/');
     define('FUNCTIONS_DIR', LIB_DIR.'functions/');
 
+define('CONFIG_FILE', '.uplift_config');
+
 require_once(FUNCTIONS_DIR.'output.php');
+require_once(FUNCTIONS_DIR.'shell_functions.php');
+require_once(FUNCTIONS_DIR.'shell_inputs.php');
 require_once(CLASS_DIR.'Shell.php');
 require_once(CLASS_DIR.'Uplift.php');
 
-$command = strtolower($argv['1']);
+$run = new Shell();
+$command = $run->commands[0];
+if( empty($command) )
+    $command = "__empty";
 
 if( is_file(COMMANDS_DIR.$command.'.php') )
 {
