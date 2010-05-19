@@ -4,7 +4,10 @@
  *
  * @author kurko
  */
+
 class push extends Uplift {
+
+    public $rootItems;
 
     function __run(){
 
@@ -26,28 +29,79 @@ class push extends Uplift {
 
     }
 
+    /**
+     * sendFiles()
+     *
+     * Send all files to the server.
+     *
+     * @return <bool>
+     */
     function sendFiles(){
+        $mode = "all";
+        if( $this->hasOption["diff"] )
+            $mode = "diff";
 
         $sftp = $this->connectSFTP();
+        $ssh = $this->connectSSH();
         if( !$sftp->chdir(".lifts") ){
             $sftp->mkdir(".lifts");
         }
         
-        $version = 'test';//date("Y_m_d_H_i_s");
+        $version = "test_lift/";//date("Y_m_d_H_i_s")."/";
         $sftp->chdir(".lifts");
         $sftp->mkdir($version);
         $sftp->chdir($version);
+        $pwd = $sftp->pwd();
 
-        print "Copying: ";
+        print "Copying files: ";
+
+        $rootDir = $this->config['ssh']['root_dir'];
+        if( substr($rootDir, strlen($rootDir)-1, strlen($rootDir)) != "/" ){
+            $rootDir.= "/";
+        }
+
+        $thisVersionDir = $rootDir.LIFTS_DIR.$version;
+        $createdDirs = array();
         foreach( $this->localFiles as $filename ){
-            //print $filename."\n";
             $content = file_get_contents($filename);
+            //write($filename);
+            //print $content."\n";
+            $dir = dirname($filename);
+            $file = basename($filename);
+            $completePath = $thisVersionDir.$dir;
 
-            $sftp->put($filename, $content);
+            //print $filename."\n";
+            if( !in_array($completePath, $createdDirs) ){
+                $ssh->exec("mkdir -p ".$thisVersionDir.$dir);
+                $createdDirs[] = $thisVersionDir.$dir;
+            }
+
+            $sftp->chdir($thisVersionDir.$dir);
+            $sftp->put($file, $content);
+            $sftp->chdir($pwd);
             print ".";
 
         }
+
+        //var_dump($this->rootItems);
+
+        if( $mode == "all" ){
+            print "\n";
+            print "Creating links: ";
+
+            foreach( glob("*") as $filename){
+                //print($filename."\n");
+                if( in_array($filename, $this->rootItems) ){
+                    $linkExec = "ln -sf ".$thisVersionDir.$filename." ".$rootDir.$filename;
+                    $ssh->exec($linkExec);
+                    print ".";
+                }
+            }
+        }
+
         print "\n";
+
+        return true;
 
     }
 
@@ -59,11 +113,21 @@ class push extends Uplift {
      * @param <string> $dir
      * @return <array> 
      */
-    function returnFiles($dir = ""){
+    function returnFiles($dir = "", $recursive = 0){
 
         $localFiles = array();
 
         foreach( glob($dir."*", GLOB_MARK) as $filename){
+
+            if( $recursive == 0 ){
+                $rootFile = $filename;
+
+                if( substr($rootFile, strlen($rootFile)-1, strlen($rootFile)) == "/" ){
+                    $rootFile = substr($rootFile, 0, strlen($rootFile)-1);
+                }
+
+                $this->rootItems[] = $rootFile;
+            }
 
             /*
              * SEARCH BY DAY
@@ -88,7 +152,7 @@ class push extends Uplift {
 
             if( is_dir($filename)){
                 $file = false;
-                $localFiles = array_merge($this->returnFiles($filename), $localFiles);
+                $localFiles = array_merge($this->returnFiles($filename, 1), $localFiles);
             } else if( is_file ){
                 $file = $filename;
                 $localFiles[] = $filename;
@@ -97,7 +161,8 @@ class push extends Uplift {
             if( !empty($file) AND
                 $this->hasOption("list") )
             {
-                print $file." - ".date("d/m/Y", filemtime($filename))."\n";
+                print $file."\n";
+                //." - ".date("d/m/Y", filemtime($filename))."\n";
             }
 
         }

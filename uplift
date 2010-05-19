@@ -7,6 +7,7 @@ define('UPLIFT_CORE_DIR', 'upliftcore/');
     define('FUNCTIONS_DIR', LIB_DIR.'functions/');
 
 define('CONFIG_FILE', '.uplift_config');
+define('LIFTS_DIR', '.lifts/');
 
 require_once(FUNCTIONS_DIR.'output.php');
 require_once(FUNCTIONS_DIR.'shell_functions.php');
