@@ -67,6 +67,20 @@ class test extends Uplift {
             write("Some tests failed.");
         }
     }
+    
+    /*
+     *
+     * HELP
+     *
+     */
+    /**
+     * help()
+     *
+     * Shows help.
+     */
+    public function help(){
+        wr("Tests if it's alright at the environment.",false);
+    }
 
 }
 ?>
