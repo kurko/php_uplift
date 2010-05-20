@@ -8,6 +8,12 @@ class Uplift extends Shell
 {
 
     public $localFiles = array();
+
+    /**
+     * All configuration about the project is here
+     *
+     * @var <array>
+     */
     public $config = array();
 
     /**
@@ -28,6 +34,23 @@ class Uplift extends Shell
      */
     public $sendMode = "all"; // 'specific'
 
+    /**
+     *
+     * @var <ssh object> Instance of SSH
+     */
+    public $ssh;
+    /**
+     *
+     * @var <sftp object> Instance of SFTP
+     */
+    public $sftp;
+
+    /**
+     *
+     * @var <string> 
+     */
+    public $rootDir;
+
     function  __construct() {
 
         parent::__construct();
@@ -35,6 +58,8 @@ class Uplift extends Shell
          * Load Configurations
          */
         $this->loadConfig();
+
+        $this->rootDir = $this->config['ssh']['root_dir'];
 
         if( in_array("help", $this->options) OR
             in_array("h", $this->options) )
@@ -61,20 +86,42 @@ class Uplift extends Shell
         $this->__run();
     }
 
+    /**
+     * connectSSH()
+     *
+     * @return <ssh object>
+     */
     function connectSSH(){
+        if( is_object($this->ssh) )
+            return $this->ssh;    
+
         $ssh = new Net_SSH2($this->config['ssh']['server']);
         $ssh->login($this->config['ssh']['username'], $this->config['ssh']['password']);
-        
-        return $ssh;
-    }
 
+        $this->ssh = $ssh;
+        return $ssh;
+    } // end connectSSH()
+
+    /**
+     * connectSFTP()
+     *
+     * @return <sftp object>
+     */
     function connectSFTP(){
+        if( is_object($this->sftp) )
+            return $this->sftp;
+
         $sftp = new Net_SFTP($this->config['ssh']['server']);
         $sftp->login($this->config['ssh']['username'], $this->config['ssh']['password']);
+        /*
+         * Changes dir automatically.
+         */
         $sftp->chdir($this->config['ssh']['root_dir']);
 
+        $this->sftp = $sftp;
         return $sftp;
-    }
+    } // end connectSFTP()
+
     /**
      * loadConfig()
      *
@@ -159,18 +206,20 @@ class Uplift extends Shell
     function isOutOfInterval($filename){
         $interval = false;
 
+//        write(basename($filename)." - ". date("d/m/Y H:i:s", filemtime($filename))." - ". date("d/m/Y H:i:s", filectime($filename)) );
+        $fileLastChange = filectime($filename);
         /*
          * Today modified files
          */
         if( $this->hasCommand("today") ){
-            if( date("d/m/Y") != date("d/m/Y", filemtime($filename)) )
+            if( date("d/m/Y") != date("d/m/Y", $fileLastChange) )
                 $interval = true;
         }
         /*
          * Yesterday modified files
          */
         else if( $this->hasCommand("yesterday") ){
-            if( date("d/m/Y", mktime(-24, 0, 0)) != date("d/m/Y", filemtime($filename)) )
+            if( date("d/m/Y", mktime(-24, 0, 0)) != date("d/m/Y", $fileLastChange) )
                 $interval = true;
         }
         /*
@@ -178,7 +227,7 @@ class Uplift extends Shell
          */
         else if( preg_match("/\s([0-9]+)h\s/", " ".implode(" ", $this->commands)." ", $time ) ){
             $givenInterval = mktime() - mktime(date("H")-$time[1]);
-            $modifiedInterval = mktime() - filemtime($filename);
+            $modifiedInterval = mktime() - $fileLastChange;
             if( $modifiedInterval > $givenInterval )
                 $interval = true;
         }
@@ -189,8 +238,42 @@ class Uplift extends Shell
         return $interval;
     } // end isOutOfInterval()
 
+    /**
+     * getLastVersion()
+     *
+     * Gets into the server and finds out what's the last version.
+     *
+     * @return <string>
+     */
     function getLastVersion(){
+        $sftp = $this->connectSFTP();
 
+        $rootDir = $this->config['ssh']['root_dir'];
+        if( substr($rootDir, strlen($rootDir)-1, strlen($rootDir)) != "/" ){
+            $rootDir.= "/";
+        }
+
+        $pwd = $sftp->pwd();
+        $sftp->chdir($rootDir.LIFTS_DIR);
+        $versions = $sftp->nlist();
+
+        /*
+         * Find out what's is the last version
+         */
+        $treatedVersions = array();
+        foreach( $versions as $version ){
+            if( preg_match("/([0-9]{4})_([0-9]{2})_([0-9]{2})_([0-9]{2})/", $version, $time ) ){
+                $treatedVersions[] = $version;
+            }
+        }
+        sort( $treatedVersions );
+        $treatedVersions = array_reverse( $treatedVersions );
+        $sftp->chdir($pwd);
+
+        if( !empty($treatedVersions) )
+            return $treatedVersions[0];
+
+        return false;
     }
 
     /*
