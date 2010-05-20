@@ -1,13 +1,18 @@
 #!/usr/bin/php
 <?php
-define('UPLIFT_CORE_DIR', 'upliftcore/');
-    define('COMMANDS_DIR', UPLIFT_CORE_DIR.'commands/');
-    define('LIB_DIR', UPLIFT_CORE_DIR.'lib/');
-    define('CLASS_DIR', LIB_DIR.'class/');
-    define('FUNCTIONS_DIR', LIB_DIR.'functions/');
+/**
+ * UPLIFT
+ *
+ * Retire your FTP.
+ *
+ * @author Alexandre de Oliveira (chavedomundo@gmail.com)
+ * @since 03/05/2010
+ */
 
-define('CONFIG_FILE', '.uplift_config');
-define('LIFTS_DIR', '.lifts/');
+define('THIS_TO_BASE_DIR', '');
+define('UPLIFT_CORE_DIR', THIS_TO_BASE_DIR.'upliftcore/');
+define('DIRECTORIES_CONFIG_FILE', UPLIFT_CORE_DIR.'config/directories.php');
+include_once(DIRECTORIES_CONFIG_FILE);
 
 require_once(FUNCTIONS_DIR.'output.php');
 require_once(FUNCTIONS_DIR.'shell_functions.php');

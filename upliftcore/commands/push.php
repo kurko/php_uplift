@@ -11,10 +11,12 @@ class push extends Uplift {
 
     function __run(){
 
-        $this->returnFiles();
+        $this->getFiles();
 
-        if( empty($this->localFiles) )
+        if( empty($this->localFiles) ){
+            write("No files matched.", false);
             return false;
+        }
 
         if( count($this->localFiles) == 1 )
             $fileWord = "file";
@@ -24,7 +26,7 @@ class push extends Uplift {
         if( inputYesNo("Push ".count($this->localFiles)." ".$fileWord." to the server? [yes, no]: ") ){
             $this->sendFiles();
         } else {
-            exitln();
+            exit();
         }
 
     }
@@ -37,17 +39,16 @@ class push extends Uplift {
      * @return <bool>
      */
     function sendFiles(){
-        $mode = "all";
-        if( $this->hasOption["diff"] )
-            $mode = "diff";
 
         $sftp = $this->connectSFTP();
         $ssh = $this->connectSSH();
         if( !$sftp->chdir(".lifts") ){
             $sftp->mkdir(".lifts");
         }
-        
-        $version = "test_lift/";//date("Y_m_d_H_i_s")."/";
+
+        //if(  )
+
+        $version = date("Y_m_d_H_i_s")."/";
         $sftp->chdir(".lifts");
         $sftp->mkdir($version);
         $sftp->chdir($version);
@@ -64,8 +65,6 @@ class push extends Uplift {
         $createdDirs = array();
         foreach( $this->localFiles as $filename ){
             $content = file_get_contents($filename);
-            //write($filename);
-            //print $content."\n";
             $dir = dirname($filename);
             $file = basename($filename);
             $completePath = $thisVersionDir.$dir;
@@ -85,12 +84,11 @@ class push extends Uplift {
 
         //var_dump($this->rootItems);
 
-        if( $mode == "all" ){
+        if( $this->sendMode == "all" ){
             print "\n";
             print "Creating links: ";
 
             foreach( glob("*") as $filename){
-                //print($filename."\n");
                 if( in_array($filename, $this->rootItems) ){
                     $linkExec = "ln -sf ".$thisVersionDir.$filename." ".$rootDir.$filename;
                     $ssh->exec($linkExec);
@@ -102,76 +100,34 @@ class push extends Uplift {
         print "\n";
 
         return true;
-
     }
 
-    /**
-     * returnFiles()
-     * 
-     * Lists all local files.
-     * 
-     * @param <string> $dir
-     * @return <array> 
+
+    /*
+     *
+     * HELP
+     *
      */
-    function returnFiles($dir = "", $recursive = 0){
+    /**
+     * help()
+     *
+     * Shows help.
+     */
+    public function help(){
+        wr("Updates server's files.");
+        br();
+        wr("usage: uplift push <options>");
+        br();
+        wr("Available options:");
 
-        $localFiles = array();
+        wr("\ttoday\t\twill push only files modified today.");
+        wr("\tyesterday\twill push only files modified yesterday.");
+        wr("\tlast\t\twill push the last modified file.");
 
-        foreach( glob($dir."*", GLOB_MARK) as $filename){
+        wr("\t1h\t\twill push files that were modified less than 60 minutes ago (1 hour).");
+        wr("\t\t\tThe similar options are also available: 2h (2 hours), 3h, 4h, and so on.");
 
-            if( $recursive == 0 ){
-                $rootFile = $filename;
-
-                if( substr($rootFile, strlen($rootFile)-1, strlen($rootFile)) == "/" ){
-                    $rootFile = substr($rootFile, 0, strlen($rootFile)-1);
-                }
-
-                $this->rootItems[] = $rootFile;
-            }
-
-            /*
-             * SEARCH BY DAY
-             */
-            /*
-             * Today modified files
-             */
-            if( $this->hasCommand("today") ){
-                if( date("d/m/Y") != date("d/m/Y", filemtime($filename)) ){
-                    continue;
-                }
-            }
-
-            /*
-             * Yesterday modified files
-             */
-            else if( $this->hasCommand("yesterday") ){
-                if( date("d/m/Y", mktime(-24, 0, 0)) != date("d/m/Y", filemtime($filename)) ){
-                    continue;
-                }
-            }
-
-            if( is_dir($filename)){
-                $file = false;
-                $localFiles = array_merge($this->returnFiles($filename, 1), $localFiles);
-            } else if( is_file ){
-                $file = $filename;
-                $localFiles[] = $filename;
-            }
-            
-            if( !empty($file) AND
-                $this->hasOption("list") )
-            {
-                print $file."\n";
-                //." - ".date("d/m/Y", filemtime($filename))."\n";
-            }
-
-        }
-
-        $this->localFiles = $localFiles;
-        return $localFiles;
-
-    } // end returnFiles();
-
+    }
 
 }
 ?>
