@@ -61,7 +61,7 @@ class test extends Uplift {
 
         if( $testIsOk ){
             breakLine();
-            write("Everything' ok.");
+            write("Everything's ok.");
         } else {
             breakLine();
             write("Some tests failed.");

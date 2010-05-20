@@ -30,6 +30,12 @@ function questionTillAnswer(){
 
 }
 
+/*
+ * ALIASES
+ */
+function wr($string, $automaticEndOfLine = true){ return write($string, $automaticEndOfLine); }
+function br($repeat = 1){ return breakLine($repeat); }
+
 function vd($str){
     var_dump($str);
 }

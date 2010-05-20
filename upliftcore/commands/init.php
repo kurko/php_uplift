@@ -10,7 +10,7 @@ class init extends Uplift {
 
         $justStartSetup = false;
         if( $this->loadConfig() ){
-            write("A configuration file has been found.\n\nDo you wish to setup ".
+            wr("A configuration file has been found.\n\nDo you wish to setup ".
                    "your environment again anyway? [yes, no]: ", false);
             $overwriteConfig = inputText();
             if( in_array($overwriteConfig, array("no","n") ) ){
@@ -19,12 +19,12 @@ class init extends Uplift {
             $justStartSetup = true;
             breakLine();
         }
-        write("Welcome to Uplift. I (Uplift) will change the way you ".
+        wr("Welcome to Uplift. I (Uplift) will change the way you ".
               "manage remote servers. It's intended to make FTP absolete on ".
               "your daily work.");
 
         breakLine();
-        write("I will guide you through the initialization process, asking some ".
+        wr("I will guide you through the initialization process, asking some ".
                "questions that will allow me to setup your environment.");
 
         breakLine();
@@ -33,8 +33,8 @@ class init extends Uplift {
         /*
          * Start?
          */
-        while( !$hasInitPermission OR !$justStartSetup ){
-            write("Do you wish to start the setup now? [yes, no]: ", false);
+        while( !$hasInitPermission AND !$justStartSetup ){
+            wr("Do you wish to start the setup now? [yes, no]: ", false);
             $initPermission = inputText();
             if( in_array($initPermission, array("yes","y") ) )
                 $hasInitPermission = true;
@@ -57,36 +57,36 @@ class init extends Uplift {
 
         while( !$hasConnected ){
 
-            write("Type in the SSH host address (e.g. ftp.host.com or 192.168.1.100): ", false);
+            wr("Type in the SSH host address (e.g. ftp.host.com or 192.168.1.100): ", false);
             $this->config['ssh']['server'] = inputText();
-            write("SSH username: ", false);
+            wr("SSH username: ", false);
             $this->config['ssh']['username'] = inputText();
-            write("SSH password: ", false);
+            wr("SSH password: ", false);
             $this->config['ssh']['password'] = inputPassword();
 
             $ssh = new Net_SSH2($this->config['ssh']['server']);
             breakLine();
-            write("\tTrying to stablish connection...");
+            wr("\tTrying to stablish connection...");
             breakLine();
             if (!$ssh->login($this->config['ssh']['username'], $this->config['ssh']['password'])) {
-                write('Login Failed. One of the following problems has ocurred:');
+                wr('Login Failed. One of the following problems has ocurred:');
                 breakLine();
-                    write("\t- host address doesn't exists;");
-                    write("\t- username is incorrect;");
-                    write("\t- password is incorrect.");
+                    wr("\t- host address doesn't exists;");
+                    wr("\t- username is incorrect;");
+                    wr("\t- password is incorrect.");
 
                 breakLine();
-                write('Try again.');
+                wr('Try again.');
                 breakLine();
 
             } else {
-                write('Logged in successfully.');
+                wr('Logged in successfully.');
                 $hasConnected = true;
             }
 
         }
 
-        write("Remote root folder (e.g: public_html, www/public_html): ", false);
+        wr("Remote path to root folder (e.g: /home/user, /home/user/public_html): ", false);
         $this->config['ssh']['root_dir'] = inputText();
         $this->saveConfig();
     }
@@ -106,7 +106,7 @@ class init extends Uplift {
         $config.= "\t);\n";
         $config.= "}\n";
         $config.= "?>";
-        fwrite($configFile, $config);
+        fwr($configFile, $config);
         fclose($configFile);
     }
 
@@ -136,6 +136,28 @@ class init extends Uplift {
         }
 
         return $config;
+    }
+
+    /*
+     *
+     * HELP
+     *
+     */
+    /**
+     * help()
+     *
+     * Shows help.
+     */
+    public function help(){
+        wr("Initializes a project under the current directory.", false);
+        br();
+        br();
+        wr("If the project has already been initialized, this will ", false);
+        wr("reconfigure it.", false);
+        br();
+        br();
+        wr("The console will ask you for ssh's connection info (host address, ", false);
+        wr("username, password) and other related stuff.", false);
     }
 
 }

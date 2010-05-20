@@ -27,6 +27,7 @@ class Shell
     function __construct(){
 
         global $argv;
+        //vd($argv);
         $actualArgv = $argv;
         if( is_array($actualArgv) ){
             foreach( $actualArgv as $index => $value ){
@@ -51,9 +52,8 @@ class Shell
             }
         }
         unset($this->commands[0]);
-        sort($this->commands);
+        $this->commands = array_values($this->commands);
 
-        //vd($this->commands);
         if( !empty($this->commands[1]) )
             $this->run = $this->commands[1];
         
