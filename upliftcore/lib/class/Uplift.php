@@ -59,7 +59,8 @@ class Uplift extends Shell
          */
         $this->loadConfig();
 
-        $this->rootDir = $this->config['ssh']['root_dir'];
+        if( !empty($this->config['ssh']['root_dir']) )
+            $this->rootDir = $this->config['ssh']['root_dir'];
 
         if( in_array("help", $this->options) OR
             in_array("h", $this->options) )
@@ -133,7 +134,9 @@ class Uplift extends Shell
     function loadConfig(){
         if( is_file(CONFIG_FILE) ){
             include_once(CONFIG_FILE);
-            $this->config = CONFIG::$default;
+
+            if( class_exists('CONFIG') )
+                $this->config = CONFIG::$default;
 
             if( !empty($this->config) )
                 return true;

@@ -106,7 +106,7 @@ class init extends Uplift {
         $config.= "\t);\n";
         $config.= "}\n";
         $config.= "?>";
-        fwr($configFile, $config);
+        fwrite($configFile, $config);
         fclose($configFile);
     }
 
