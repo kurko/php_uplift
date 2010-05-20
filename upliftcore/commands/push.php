@@ -46,9 +46,15 @@ class push extends Uplift {
             $sftp->mkdir(".lifts");
         }
 
-        //if(  )
-
         $version = date("Y_m_d_H_i_s")."/";
+        
+        if( $this->sendMode == "specific" ){
+            $versionTmp = $this->getLastVersion();
+            if( is_string($versionTmp) ){
+                $version = $versionTmp."/";
+            }
+        }
+
         $sftp->chdir(".lifts");
         $sftp->mkdir($version);
         $sftp->chdir($version);
@@ -63,6 +69,10 @@ class push extends Uplift {
 
         $thisVersionDir = $rootDir.LIFTS_DIR.$version;
         $createdDirs = array();
+
+        /*
+         * Push files to the server
+         */
         foreach( $this->localFiles as $filename ){
             $content = file_get_contents($filename);
             $dir = dirname($filename);
@@ -82,26 +92,52 @@ class push extends Uplift {
 
         }
 
-        //var_dump($this->rootItems);
+        $this->cleanLinks();
+        /*
+         * Creates root symbolic links
+         *
+         * Note: it creates links according to local files. If there are files
+         * missing on the server, the links will be broken.
+         */
+        print "\n";
+        print "Creating links: ";
 
-        if( $this->sendMode == "all" ){
-            print "\n";
-            print "Creating links: ";
-
-            foreach( glob("*") as $filename){
-                if( in_array($filename, $this->rootItems) ){
-                    $linkExec = "ln -sf ".$thisVersionDir.$filename." ".$rootDir.$filename;
-                    $ssh->exec($linkExec);
-                    print ".";
-                }
+        foreach( glob("*") as $filename){
+            if( in_array($filename, $this->rootItems) ){
+                $linkExec = "ln -sf ".$thisVersionDir.$filename." ".$rootDir.$filename;
+                $ssh->exec($linkExec);
+                print ".";
             }
         }
+
+        if( $this->sendMode == 'specific' )
+            $this->cleanBrokenLinks();
 
         print "\n";
 
         return true;
     }
 
+    function cleanLinks(){
+        br();
+        wr("Cleaning links: ", false);
+        $sshExec = 'find '.$this->rootDir.' -type l | while read FN; do rm -f "$FN"; done';
+        $this->ssh->exec($sshExec);
+        wr("ok.", false);
+
+    }
+
+    function cleanBrokenLinks(){
+        /*
+         * Creates root symbolic links
+         */
+        br();
+        wr("Cleaning broken links: ", false);
+        $sshExec = 'find '.$this->rootDir.' -type l | (while read FN ; do test -e "$FN" || rm -fr "$FN"; done)';
+        $this->ssh->exec($sshExec);
+        wr("ok.", false);
+
+    }
 
     /*
      *
