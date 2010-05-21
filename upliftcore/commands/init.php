@@ -52,6 +52,13 @@ class init extends Uplift {
 
     }
 
+    /**
+     * setup()
+     *
+     * Show up questions to the user and save configurations.
+     *
+     * @return <bool>
+     */
     function setup(){
         $hasConnected = false;
 
@@ -88,9 +95,16 @@ class init extends Uplift {
 
         wr("Remote path to root folder (e.g: /home/user, /home/user/public_html): ", false);
         $this->config['ssh']['root_dir'] = inputText();
-        $this->saveConfig();
+        return $this->saveConfig();
     }
 
+    /**
+     * saveConfig()
+     * 
+     * Saves the configuration into a file.
+     * 
+     * @return <bool>
+     */
     function saveConfig(){
         $configFile = fopen("./".CONFIG_FILE, "w");
 
@@ -108,8 +122,21 @@ class init extends Uplift {
         $config.= "?>";
         fwrite($configFile, $config);
         fclose($configFile);
-    }
 
+        return true;
+    } // end saveConfig()
+
+    /**
+     * generateConfigSyntax()
+     *
+     * Gets an array of options and prepares it for creating a configuration
+     * file.
+     *
+     * @param <string> $key
+     * @param <mixed> $value
+     * @param <int> $recursive
+     * @return <string>
+     */
     function generateConfigSyntax($key, $value = "", $recursive = 1){
         $config = "";
         if( is_array($key) ){
@@ -136,7 +163,7 @@ class init extends Uplift {
         }
 
         return $config;
-    }
+    } // end generateConfigSyntax()
 
     /*
      *

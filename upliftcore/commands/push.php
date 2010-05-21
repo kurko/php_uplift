@@ -1,6 +1,8 @@
 <?php
 /**
- * Description of push
+ * PUSH
+ *
+ * Command responsible for sending files to the remote server.
  *
  * @author kurko
  */
@@ -11,6 +13,9 @@ class push extends Uplift {
 
     function __run(){
 
+        /*
+         * Check what files should be sent.
+         */
         $this->getFiles();
 
         if( empty($this->localFiles) ){
@@ -23,6 +28,9 @@ class push extends Uplift {
         else
             $fileWord = "files";
 
+        /*
+         * If user confirms, starts sending files.
+         */
         if( inputYesNo("Push ".count($this->localFiles)." ".$fileWord." to the server? [yes, no]: ") ){
             $this->sendFiles();
         } else {
@@ -34,7 +42,8 @@ class push extends Uplift {
     /**
      * sendFiles()
      *
-     * Send all files to the server.
+     * Send all files to the server. Only files existent in $this->localFiles
+     * (which are allocated by getFiles() method) will be sent.
      *
      * @return <bool>
      */
@@ -46,8 +55,16 @@ class push extends Uplift {
             $sftp->mkdir(".lifts");
         }
 
+        /*
+         * creates the next push's version
+         */
         $version = date("Y_m_d_H_i_s")."/";
-        
+
+        /*
+         * If the sendMode is set to specific, all files will be sent to
+         * the last version, not create a new one. Local files will overwrite
+         * remote ones.
+         */
         if( $this->sendMode == "specific" ){
             $versionTmp = $this->getLastVersion();
             if( is_string($versionTmp) ){
@@ -55,6 +72,15 @@ class push extends Uplift {
             }
         }
 
+        /*
+         * Process:
+         *
+         * - Gets to the right remote's folder,
+         * - prepares remote's folder string path,
+         * - send files,
+         * - clean all links,
+         * - creates links again,
+         */
         $sftp->chdir(".lifts");
         $sftp->mkdir($version);
         $sftp->chdir($version);
@@ -110,23 +136,36 @@ class push extends Uplift {
             }
         }
 
+        /*
+         * If it's 'specific' sendMode, it might have broken links on the remote
+         * side.
+         */
         if( $this->sendMode == 'specific' )
             $this->cleanBrokenLinks();
 
         print "\n";
 
         return true;
-    }
+    } // end sendFiles()
 
+    /**
+     * cleanLinks()
+     *
+     * Erases the symbolic links created on the server.
+     */
     function cleanLinks(){
         br();
         wr("Cleaning links: ", false);
         $sshExec = 'find '.$this->rootDir.' -type l | while read FN; do rm -f "$FN"; done';
         $this->ssh->exec($sshExec);
         wr("ok.", false);
-
     }
 
+    /**
+     * cleanBrokenLinks()
+     *
+     * Checks for broken symbolic links on the server and erases them.
+     */
     function cleanBrokenLinks(){
         /*
          * Creates root symbolic links
