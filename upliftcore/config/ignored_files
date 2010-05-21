@@ -1,0 +1,5 @@
+uplift
+upliftcore/
+.uplift_config
+.git
+.gitignore
