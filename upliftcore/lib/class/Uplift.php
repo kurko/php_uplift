@@ -7,6 +7,8 @@
 class Uplift extends Shell
 {
 
+    public $ignoreFiles = array();
+
     public $localFiles = array();
 
     /**
@@ -149,7 +151,9 @@ class Uplift extends Shell
     /**
      * getFiles()
      *
-     * Lists all local files.
+     * Discovers what should be sent.
+     *
+     * Analyzes upliftcore/config/ignored_files for exclusion local files.
      *
      * @param <string> $dir
      * @return <array>
@@ -158,8 +162,29 @@ class Uplift extends Shell
 
         $localFiles = array();
 
+        /*
+         * Get core ignored files
+         */
+        $handle = fopen(IGNORED_CORE_FILES, "r");
+        while( !feof($handle) ){
+           $this->ignoreFiles[] = str_replace("\n", "", fgets($handle) );
+        }
+        fclose($handle);
+
+        /*
+         * Loop through every folder/file in this directory
+         */
         foreach( glob($dir."*", GLOB_MARK) as $filename){
 
+            /*
+             * Ignores certain files
+             */
+            if( in_array($filename, $this->ignoreFiles) )
+                continue;
+
+            /*
+             * Writes down the root files for creating symbolic links later
+             */
             if( $recursive == 0 ){
                 $rootFile = $filename;
 
@@ -170,10 +195,22 @@ class Uplift extends Shell
                 $this->rootItems[] = $rootFile;
             }
 
+            /*
+             * On dirs, go inside and get its files.
+             */
             if( is_dir($filename)){
                 $file = false;
                 $localFiles = array_merge($this->getFiles($filename, 1), $localFiles);
-            } else if( is_file($filename) ){
+            }
+            /*
+             * Is file.
+             * 
+             * Analyzes if the file is ok to be sent according to its inode
+             * (last modified date). If user chooses today's files, this
+             * will exclude all other files.
+             */
+            else if( is_file($filename) ){
+                
                 /*
                  * Verifies if has intervals
                  */
@@ -184,6 +221,9 @@ class Uplift extends Shell
                 $localFiles[] = $filename;
             }
 
+            /*
+             * --list
+             */
             if( !empty($file) AND
                 $this->hasOption("list") )
             {

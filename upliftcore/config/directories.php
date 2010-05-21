@@ -8,4 +8,6 @@
 define('CONFIG_FILE', '.uplift_config');
 define('LIFTS_DIR', '.lifts/');
 
+define('CORE_CONFIG_DIR', UPLIFT_CORE_DIR.'config/');
+    define('IGNORED_CORE_FILES', CORE_CONFIG_DIR.'ignored_files');
 ?>
